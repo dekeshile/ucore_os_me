@@ -32,6 +32,7 @@ static struct pseudodesc idt_pd = {
 };
 
 /* idt_init - initialize IDT to each of the entry points in kern/trap/vectors.S */
+extern uintptr_t __vectors[];
 void
 idt_init(void) {
      /* LAB1 YOUR CODE : STEP 2 */
@@ -46,6 +47,17 @@ idt_init(void) {
       *     You don't know the meaning of this instruction? just google it! and check the libs/x86.h to know more.
       *     Notice: the argument of lidt is idt_pd. try to find it!
       */
+     /*
+     (1)所有中断向量例程ISR的地址都存储在__vectors里
+     而 __vectors 定义在文件 kern/trap/vector.S
+     在本文件中我们可以 extern uintptr_t __vectors[]; 这样引入这个外部文件变量
+     (2)我们需要在中断向量表里把所有的ISR都建立起来，也就是将ISR存储在中断向量表IDT里
+     idt[256] 即是中断向量表
+     SETGATE 宏 建立idt的每一个条目
+     (3)建立完IDT表以后，要通过 lidt 指令 让CPU知道你建立的这个表在哪里
+     */
+    
+
 }
 
 static const char *

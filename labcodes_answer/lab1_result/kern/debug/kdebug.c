@@ -305,7 +305,11 @@ print_stackframe(void) {
     uint32_t ebp = read_ebp(), eip = read_eip();
 
     int i, j;
-    for (i = 0; ebp != 0 && i < STACKFRAME_DEPTH; i ++) {
+    /*
+        ebp存的值时上一栈帧的ebp，所以递归下直到ebp为0 
+        且栈的深度不超过STACKFRAME_DEPTH 并且 ebp 
+    */
+    for (i = 0; ebp != 0 && i < STACKFRAME_DEPTH; i++) {
         cprintf("ebp:0x%08x eip:0x%08x args:", ebp, eip);
         uint32_t *args = (uint32_t *)ebp + 2;
         for (j = 0; j < 4; j ++) {
@@ -313,7 +317,7 @@ print_stackframe(void) {
         }
         cprintf("\n");
         print_debuginfo(eip - 1);
-        eip = ((uint32_t *)ebp)[1];
+        eip = ((uint32_t *)ebp)[1];//（*arrPtr）[i] 等同于 *（（*arrPtr）+i）
         ebp = ((uint32_t *)ebp)[0];
     }
 }
