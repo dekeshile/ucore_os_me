@@ -302,5 +302,39 @@ print_stackframe(void) {
       *           NOTICE: the calling funciton's return addr eip  = ss:[ebp+4]
       *                   the calling funciton's ebp = ss:[ebp]
       */
+     /*
+        定义变量ebp存储寄存器ebp的值
+        注意read_ebp是一个内联函数，而不是普通非内联函数，这样编译器在编译的时候，直接在此处扩展read_ebp的代码，
+        而不是再调用read_ebp函数时ebp的值。
+
+        定义变量eip的值存储寄存器eip的值
+          注意read_eip是不是内联函数，而是普通非内联函数，和刚才的read_ebp刚好相反
+          这样做，当执行时调用read_eip函数时,会把调用指令的下一条指令地址(既是eip寄存器的值也是当前函数调用返回地址)压入栈中
+          这样就可以通过栈内获取到eip的值
+     */
+            uint32_t *ebp =  (uint32_t *)read_ebp();
+            uint32_t eip =  read_eip();//当前栈的栈顶
+                /*
+                    ebp存的值是上一栈帧的ebp，所以递归下直到ebp为0 
+                    且栈的深度不超过STACKFRAME_DEPTH 并且 ebp 
+            */
+            for(int i=0;ebp !=0 && i<STACKFRAME_DEPTH;i++) {
+                cprintf("ebp:%08x  ",(uint32_t)ebp);
+                cprintf("eip:%08x  ",eip);
+                /*强制类型转换，把ebp的值作为地址，同类型加2，往上偏移两个单位
+                  args 即是指针
+                */
+                uint32_t* args = (uint32_t*)ebp + 2;
+                cprintf("args: ");
+                for(int j=0;j < 4;j++) {
+                     cprintf("%08x  ",args[j]);
+                }
+                cprintf("\n ");
+                print_debuginfo(eip-1);
+                eip = (uint32_t)(ebp + 1);
+                ebp = (uint32_t *)*ebp;//ebp里存的值是上一个ebp的值
+
+
+            }
 }
 
