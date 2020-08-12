@@ -24,6 +24,11 @@ static void print_ticks() {
  *
  * Must be built at run time because shifted function addresses can't
  * be represented in relocation records.
+ * 在保护模式下，最多会存在256个Interrupt/Exception Vectors。
+ * 范围[0，31]内的32个向量被异常Exception和NMI使用，
+ * 但当前并非所有这32个向量都已经被使用，有几个当前没有被使用的，请不要擅自使用它们，它们被保留，以备将来可能增加新的Exception。
+ * 范围[32，255]内的向量被保留给用户定义的Interrupts。Intel没有定义，也没有保留这些Interrupts。
+ * 用户可以将它们用作外部I/O设备中断（8259A IRQ），或者系统调用（System Call 、Software Interrupts）等。
  * */
 static struct gatedesc idt[256] = {{0}};
 
@@ -32,7 +37,6 @@ static struct pseudodesc idt_pd = {
 };
 
 /* idt_init - initialize IDT to each of the entry points in kern/trap/vectors.S */
-extern uintptr_t __vectors[];
 void
 idt_init(void) {
      /* LAB1 YOUR CODE : STEP 2 */
@@ -51,13 +55,19 @@ idt_init(void) {
      (1)所有中断向量例程ISR的地址都存储在__vectors里
      而 __vectors 定义在文件 kern/trap/vector.S
      在本文件中我们可以 extern uintptr_t __vectors[]; 这样引入这个外部文件变量
-     (2)我们需要在中断向量表里把所有的ISR都建立起来，也就是将ISR存储在中断向量表IDT里
+     (2)我们需要在中断向量表里把所有的ISR对应的中断门都建立起来，也就是将ISR存储在中断向量表IDT里
      idt[256] 即是中断向量表
      SETGATE 宏 建立idt的每一个条目
      (3)建立完IDT表以后，要通过 lidt 指令 让CPU知道你建立的这个表在哪里
      */
-    
 
+    extern uintptr_t __vectors[];
+    for(int i=0;i< sizeof(idt)/sizeof(struct gatedesc);i++) {
+          //中断向量表的索引，是否是陷阱，中断处理的代码选择子，特权级
+        SETGATE(idt[i], 0, GD_KTEXT, __vectors[i], DPL_KERNEL);
+    }
+    //加载IDT表
+   lidt(&idt_pd);
 }
 
 static const char *
